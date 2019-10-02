@@ -7,7 +7,7 @@ timestr = time.strftime("%Y%m%d-%H%M%S")
 import os
 
 
-def pull_overview(model=None,submodel=None,baseurl=None):
+def pull_overview(model=None,submodel=None,baseurl=None,doc_type='input_parameters'):
     """
     """
     if model==None:model='Meteorology' #default to meterology model
@@ -19,11 +19,19 @@ def pull_overview(model=None,submodel=None,baseurl=None):
     base_filename=dir_path
     filename, headers = urllib.request.urlretrieve(baseurl, filename=dir_path+"\\data\\{}_overview_{}.py".format(submodel.lower(),timestr))
     
-    with open(filename,'rU') as input_params:
+    with open(filename,'rU') as pulled_pydoc:
         #use .strip() method to remove line-endings and whitespace
-        all_lines=[line.strip() for line in input_params]
-        all_lines=[line for line in all_lines if not re.search('^\#',line)]#remove all lines that have been commented out
-    
+        all_lines=[line.strip() for line in pulled_pydoc]
+        #remove all lines that have been commented out
+        all_lines=[line for line in all_lines if not re.search('^\#',line)]#assuming \\
+        #just one occurrence of line in all_lines, make flexible later
+        doc_pull_start=[i for i,line in enumerate(all_lines) if re.search('^'+doc_type+'\s\=\s\[',line)][0]
+        doc_pull_end,end_char_position_in_line=parenth_counter(all_lines[doc_pull_start+1:],'[')#changing \\
+        #default open parenth to square bracket, make flexible later
+        doc_pull_end+=1#add 1 because we did not give parentheses_counter \\
+        #the rest of the line that the open parenth started on
+        doc_pull_lines=all_lines[doc_pull_start,doc_pull_end]
+        
 
 
 
@@ -58,18 +66,25 @@ def pull_input_params(model=None,baseurl=None):
                 submodel_lines=all_lines[submodel_class_pos[i]+1:submodel_class_pos[i+1]] #this one is from i to i+1(next clump of lines)
             else:
                 submodel_lines=all_lines[submodel_class_pos[i]+1:] #this one goes to the end
-            #print('submodel_line len',len(submodel_lines))
+
+            
             #for the range of lines for each submodel, find the parameters
             param_line_pos, param_lines=my_unzip([(i,line) for i,line in enumerate(submodel_lines) if re.search('\s\=\sforms\.',line)])
             param_name_end=[re.search('\s\=\sforms\.',line).start() for line in param_lines]
-            features_start=[i+1 for i in param_line_pos]
-            features_end=[]
 
+
+            features_start=[i+1 for i in param_line_pos]
+            features_end=[]#initialize and then find the end of each feature based on line containing closing parenth
             for j in features_start:
-                line,pos_in_line=parenth_counter(submodel_lines[j+1:])#returns the line (and position in the line)
+                line_count_after_open,pos_in_line=parenth_counter(submodel_lines[j+1:]) #returns the line
+                #(and position in the line which I'm not using) of the closing partenth, assuming it doesn't
+                #close on the same line. modify this line to make flexible,
+                #parenth_counter already flexible
+                line_count_after_open+=1#add 1 since line with opening parenth not given to parenth_counter
+                features_end.append(j+line_count_after_open)
                 
 
-            '''
+            '''this code removed because was not flexible to having close paranetheses not on it's own line
             for j in features_start:
                 ij=0
                 while True:
@@ -115,16 +130,18 @@ def my_unzip(list_of_tups):
         return [],[]
     else:return zip(*list_of_tups)
 
-def parenth_counter(text_after_open_p,open_type='(')
+def parenth_counter(text_after_open_p,open_type=None):
     '''takes a list of strings and 
     '''
+    #print('open_type:',open_type)
+    if open_type==None:open_type='('
     if open_type=='(':close_type=')'
     if open_type=='[':close_type=']'
     if open_type=='{':close_type='}'
     open_count_from_zero=1
     line_count=0
     while open_count_from_zero>0:
-        line=text_after_open[line_count]
+        line=text_after_open_p[line_count]
         char_count=0
         for i in line:
             if i==close_type:
@@ -134,9 +151,7 @@ def parenth_counter(text_after_open_p,open_type='(')
             if open_count_from_zero==0:break;break#twice since nested loop
             char_count+=1
         line_count+=1    
-     return line_count,char_count       
-
-
+    return line_count,char_count
 
 if __name__=="__main__":
     pull_input_params()
