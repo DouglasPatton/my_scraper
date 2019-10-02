@@ -30,8 +30,47 @@ def pull_overview(model=None,submodel=None,baseurl=None,doc_type='input_paramete
         #default open parenth to square bracket, make flexible later
         doc_pull_end+=1+doc_pull_start#add 1 because we did not give parentheses_counter \\
         #the rest of the line that the open parenth started on
-        doc_pull_lines=all_lines[doc_pull_start:doc_pull_end]
+        doc_pull_lines=all_lines[doc_pull_start+1:doc_pull_end-1]
+        #print(doc_pull_start,doc_pull_end)
+        #print(len(doc_pull_lines))
+        doc_pull_lines_condensed=[]
+        for i,line in enumerate(doc_pull_lines):
+            if re.search('^\[',line):
+                doc_pull_lines_condensed.append(line)
+            else:
+                if line[-2:]=="\s\"":
+                    line=line[:-2]
+                if line[-1]=="\"":
+                    line=line[:-1]
+                doc_pull_lines_condensed[-1]=doc_pull_lines_condensed[-1]+line
+        #print(len(doc_pull_lines_condensed))
+        '''feature_doc_pos,feature_doc_lines=myunzip([(i,line) for i,line in enumerate(doc_pull_lines)if re.search('^\[',line)])
+        if len(doc_pull_lines)>len(feature_doc_lines):'''
+        if doc_type=='input_parameters':
+            pull_overview_dict={}
+            for line in doc_pull_lines_condensed:
+                line=line[1:-2]#drop extra characters at start and end
+
+                start_quote_loc=[0]
+                end_quote_loc=[]#add ending location at the end of loop
+                #line=line[1:-1]#drop first and last since already accounted for in start and end quote loc vars
+                for i,char in enumerate(line[:-1]):
+                    if char=="\"":
+                        if line[i+1]==",":
+                            end_quote_loc.append(i)
+                        if (i>2 and line[i-2]==","):
+                            start_quote_loc.append(i)
+                end_quote_loc.append(len(line))
+                #print('start',start_quote_loc)
+                #print('end',end_quote_loc)
+
+                keylist=['name','type','description','child_elements']
+                for i in range(len(end_quote_loc)):
+                    pull_overview_dict[keylist[i]]=line[start_quote_loc[i]:end_quote_loc[i]+1]
+                print(pull_overview_dict)
+                
         
+
 
 
 def pull_input_params(model=None,baseurl=None):
@@ -153,7 +192,7 @@ def parenth_counter(text_after_open_p,open_type=None):
     return line_count,char_count
 
 if __name__=="__main__":
-    pull_input_params()
+    pull_overview()
     
 
 
