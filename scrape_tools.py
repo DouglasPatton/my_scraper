@@ -28,11 +28,10 @@ def pull_overview(model=None,submodel=None,baseurl=None,doc_type='input_paramete
         doc_pull_start=[i for i,line in enumerate(all_lines) if re.search('^'+doc_type+'\s\=\s\[',line)][0]
         doc_pull_end,end_char_position_in_line=parenth_counter(all_lines[doc_pull_start+1:],'[')#changing \\
         #default open parenth to square bracket, make flexible later
-        doc_pull_end+=1#add 1 because we did not give parentheses_counter \\
+        doc_pull_end+=1+doc_pull_start#add 1 because we did not give parentheses_counter \\
         #the rest of the line that the open parenth started on
-        doc_pull_lines=all_lines[doc_pull_start,doc_pull_end]
+        doc_pull_lines=all_lines[doc_pull_start:doc_pull_end]
         
-
 
 
 def pull_input_params(model=None,baseurl=None):
