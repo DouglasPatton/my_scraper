@@ -1,7 +1,7 @@
 #import scrape_tools as st
-import scrape_tools1 as st1
+import scrape_tools as st
 
 #input_parameters=st.pull_input_params('meteorology')
 
 print('------------------------')
-input_parameters=st1.pull_input_params('meteorology')
+input_parameters=st.pull_input_params('meteorology')
