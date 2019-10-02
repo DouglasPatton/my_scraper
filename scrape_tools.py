@@ -39,9 +39,9 @@ def pull_overview(model=None,submodel=None,baseurl=None,doc_type='input_paramete
                 doc_pull_lines_condensed.append(line)
             else:
                 if line[-2:]=="\s\"":
-                    line=line[:-2]
+                    line=line[1:-2];print('here?')
                 if line[-1]=="\"":
-                    line=line[:-1]
+                    line=line[1:-1];print('here!')
                 doc_pull_lines_condensed[-1]=doc_pull_lines_condensed[-1]+line
         #print(len(doc_pull_lines_condensed))
         '''feature_doc_pos,feature_doc_lines=myunzip([(i,line) for i,line in enumerate(doc_pull_lines)if re.search('^\[',line)])
@@ -66,7 +66,7 @@ def pull_overview(model=None,submodel=None,baseurl=None,doc_type='input_paramete
 
                 keylist=['name','type','description','child_elements']
                 for i in range(len(end_quote_loc)):
-                    pull_overview_dict[keylist[i]]=line[start_quote_loc[i]:end_quote_loc[i]+1]
+                    pull_overview_dict[keylist[i]]=line[start_quote_loc[i]+1:end_quote_loc[i]]
                 print(pull_overview_dict)
                 
         
