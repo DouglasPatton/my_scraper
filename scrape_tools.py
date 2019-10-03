@@ -77,21 +77,39 @@ class Documentation_check():
                         if (i>2 and (line[i-2]=="," or line[i-1]==",")):
                             start_quote_loc.append(i)
                 end_quote_loc.append(len(line))
-                print('start',start_quote_loc)
-                print('end',end_quote_loc)
+                #print('start',start_quote_loc)
+                #print('end',end_quote_loc)
                 
                 keylist=['name','type','description','child_elements']
                 for i in range(len(end_quote_loc)-1):#-1 b/c first item is name
-                    print(i)
-                    print(keylist[i])
+                    #print(i)
+                    #print(keylist[i])
                     param_dict[keylist[i+1]]=line[start_quote_loc[i+1]+1:end_quote_loc[i+1]]
                 pull_overview_dict[line[start_quote_loc[0]+1:end_quote_loc[0]]]=param_dict
         self.pull_overview_dict=pull_overview_dict
                     
             
 
+    def condense_widgets(self,all_lines):
+        widget_lines_start_pos,widget_lines=self.my_unzip([(ii,line) for ii,line in enumerate(all_lines) if re.search('widget\=.+\{$',line)])
+        widget_lines_end_shift, char=self.my_unzip([self.parenth_counter(all_lines[i+1:],'{') for i in widget_lines_start_pos])
+        widget_lines_end_shift=[i+1 for i in widget_lines_end_shift]#add 1 to each b/c parenth_counter didn't have line 0, and convert to list
 
-
+        widget_lines_condensed=[]
+        for i,line in enumerate(widget_lines):
+            for ii in range(widget_lines_end_shift[i]):
+                line=line+all_lines[widget_lines_start_pos[i]+1+ii]
+            widget_lines_condensed.append(line)
+        
+        #print('full widget line',widget_lines_condensed)
+        for i,pos in enumerate(widget_lines_start_pos):
+            all_lines[pos]=widget_lines_condensed[i]
+            for ii in range(widget_lines_end_shift[i]):
+                #print('line to be deleted:',all_lines[pos+ii+1])
+                all_lines[pos+ii+1]=""
+        #print([all_lines[widget_lines_start_pos[i]] for i in range(len(widget_lines_start_pos))])
+        return all_lines
+    
     def pull_input_params(self,model=None,baseurl=None):
         """downloads model_parameters.py file
         downloads from master repo as default
@@ -113,20 +131,9 @@ class Documentation_check():
         all_lines=[line for line in all_lines if not re.search('^\#',line)]
 
         #put widgets that span multiple lines on single line
-        widget_lines_start_pos,widget_lines=self.my_unzip([(ii,line) for ii,line in enumerate(all_lines) if re.search('widget\=.+\{$',line)])
-        widget_lines_end_shift, char=self.my_unzip([self.parenth_counter(all_lines[i+1:],'{') for i in widget_lines_start_pos])
+        all_lines=self.condense_widgets(all_lines)
         
-        #print(widget_lines_end_shift)
-        widget_lines_condensed=[line+all_lines[widget_lines_start_pos[i]+1+ii] for i,line in enumerate(widget_lines) for ii in range(widget_lines_end_shift[i]+1)]
-        #print('full widget line',widget_lines_condensed)
-        for i,pos in enumerate(widget_lines_start_pos):
-            all_lines[pos]=widget_lines_condensed[i]
-            for ii in range(widget_lines_end_shift[i]):
-                #print('line to be deleted:',all_lines[i+ii+1])
-                all_lines[i+ii+1]=""
-        #print([all_lines[widget_lines_start_pos[i]] for i in range(len(widget_lines_start_pos))])
-        
-               
+             
         #extract submodel name and position in all_lines
         submodel_class_pos=[]
         submodel_class_pos,submodel_class_line=self.my_unzip([(i,line) for i,line in enumerate(all_lines) if re.search('^class',line)])
@@ -171,7 +178,7 @@ class Documentation_check():
                     paramfeaturelines=submodel_lines[features_start[ii]:features_end[ii]]#list of lines for each paramter's potential features
                     feature_line_pos,feature_lines=self.my_unzip([(ii,line) for ii,line in enumerate(paramfeaturelines) if re.search('\=',line)])
                     feature_name_end=[re.search('\=',line).start() for line in feature_lines]
-                    feature_name, feature_value=self.my_unzip([(line[:end],line[end:]) for line,end in zip(feature_lines,feature_name_end)])
+                    feature_name, feature_value=self.my_unzip([(line[:end],line[end+1:]) for line,end in zip(feature_lines,feature_name_end)])
                     param_feature_dict={}
                     for key,value in zip(feature_name,feature_value):
                         param_feature_dict[key]=value
