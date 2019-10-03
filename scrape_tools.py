@@ -64,7 +64,7 @@ class Documentation_check():
             pull_overview_dict={}
             for line in doc_pull_lines_condensed:
                 param_dict={}
-                print(line)
+                #print(line)
                 line=line[1:-2]#drop extra characters at start and end
 
                 start_quote_loc=[0]
@@ -91,9 +91,10 @@ class Documentation_check():
             
 
     def condense_widgets(self,all_lines):
+        
         widget_lines_start_pos,widget_lines=self.my_unzip([(ii,line) for ii,line in enumerate(all_lines) if re.search('widget\=.+\{$',line)])
         widget_lines_end_shift, char=self.my_unzip([self.parenth_counter(all_lines[i+1:],'{') for i in widget_lines_start_pos])
-        widget_lines_end_shift=[i+1 for i in widget_lines_end_shift]#add 1 to each b/c parenth_counter didn't have line 0, and convert to list
+        #widget_lines_end_shift=[i+1 for i in widget_lines_end_shift]#add 1 to each b/c parenth_counter didn't have line 0, and convert to list
 
         widget_lines_condensed=[]
         for i,line in enumerate(widget_lines):
@@ -107,6 +108,12 @@ class Documentation_check():
             for ii in range(widget_lines_end_shift[i]):
                 #print('line to be deleted:',all_lines[pos+ii+1])
                 all_lines[pos+ii+1]=""
+            print(widget_lines_condensed[i])
+            if re.search('\'title\'\:',widget_lines_condensed[i]):
+                all_lines[pos+1]='widget_title='+all_lines[pos][re.search('\'title\'\:',widget_lines_condensed[i]).start()+10:-4]
+                print('here',all_lines[pos+1])
+                    
+                    
         #print([all_lines[widget_lines_start_pos[i]] for i in range(len(widget_lines_start_pos))])
         return all_lines
     
@@ -230,7 +237,7 @@ if __name__=="__main__":
     the_model='Meteorology';the_submodel='Precipitation';the_doc_type='input_parameters'
     test.pull_overview(model=the_model,submodel=the_submodel,doc_type=the_doc_type)
     test.pull_input_params(model=the_model)
-    print('=============================')
+    print('============model has finished=================')
     print('=============================')
     print('submodel_dict:',test.submodel_dict)
     print('##########################')
