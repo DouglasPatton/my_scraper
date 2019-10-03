@@ -63,6 +63,8 @@ class Documentation_check():
         if doc_type=='input_parameters':
             pull_overview_dict={}
             for line in doc_pull_lines_condensed:
+                param_dict={}
+                print(line)
                 line=line[1:-2]#drop extra characters at start and end
 
                 start_quote_loc=[0]
@@ -70,17 +72,20 @@ class Documentation_check():
                 #line=line[1:-1]#drop first and last since already accounted for in start and end quote loc vars
                 for i,char in enumerate(line[:-1]):
                     if char=="\"":
-                        if line[i+1]==",":
+                        if line[i+1]==",":#if next item is a comma
                             end_quote_loc.append(i)
-                        if (i>2 and line[i-2]==","):
+                        if (i>2 and (line[i-2]=="," or line[i-1]==",")):
                             start_quote_loc.append(i)
                 end_quote_loc.append(len(line))
-                #print('start',start_quote_loc)
-                #print('end',end_quote_loc)
-
+                print('start',start_quote_loc)
+                print('end',end_quote_loc)
+                
                 keylist=['name','type','description','child_elements']
-                for i in range(len(end_quote_loc)):
-                    pull_overview_dict[keylist[i]]=line[start_quote_loc[i]+1:end_quote_loc[i]]
+                for i in range(len(end_quote_loc)-1):#-1 b/c first item is name
+                    print(i)
+                    print(keylist[i])
+                    param_dict[keylist[i+1]]=line[start_quote_loc[i+1]+1:end_quote_loc[i+1]]
+                pull_overview_dict[line[start_quote_loc[0]+1:end_quote_loc[0]]]=param_dict
         self.pull_overview_dict=pull_overview_dict
                     
             
@@ -107,8 +112,20 @@ class Documentation_check():
         #remove all lines that have been commented out
         all_lines=[line for line in all_lines if not re.search('^\#',line)]
 
-        #put widgets on single line
-        #feature_dict_line_pos,feature_dict_lines=self.my[(ii,line) for ii,line in enumerate(feature_lines)]
+        #put widgets that span multiple lines on single line
+        widget_lines_start_pos,widget_lines=self.my_unzip([(ii,line) for ii,line in enumerate(all_lines) if re.search('widget\=.+\{$',line)])
+        widget_lines_end_shift, char=self.my_unzip([self.parenth_counter(all_lines[i+1:],'{') for i in widget_lines_start_pos])
+        
+        #print(widget_lines_end_shift)
+        widget_lines_condensed=[line+all_lines[widget_lines_start_pos[i]+1+ii] for i,line in enumerate(widget_lines) for ii in range(widget_lines_end_shift[i]+1)]
+        #print('full widget line',widget_lines_condensed)
+        for i,pos in enumerate(widget_lines_start_pos):
+            all_lines[pos]=widget_lines_condensed[i]
+            for ii in range(widget_lines_end_shift[i]):
+                #print('line to be deleted:',all_lines[i+ii+1])
+                all_lines[i+ii+1]=""
+        #print([all_lines[widget_lines_start_pos[i]] for i in range(len(widget_lines_start_pos))])
+        
                
         #extract submodel name and position in all_lines
         submodel_class_pos=[]
@@ -206,6 +223,8 @@ if __name__=="__main__":
     the_model='Meteorology';the_submodel='Precipitation';the_doc_type='input_parameters'
     test.pull_overview(model=the_model,submodel=the_submodel,doc_type=the_doc_type)
     test.pull_input_params(model=the_model)
+    print('=============================')
+    print('=============================')
     print('submodel_dict:',test.submodel_dict)
     print('##########################')
     print('pull_overview_dict:',test.pull_overview_dict)
