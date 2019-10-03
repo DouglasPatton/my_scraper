@@ -8,6 +8,14 @@ import os
 
 
 class Documentation_check():
+    """gathers parameters, gathers existing documentation, compares
+    methods
+        pull_overview
+            creates pull_overview_dict
+        pull_input_params
+            creates submodel_dict
+        do_doc_compare
+    """
     def __init__(self,doc_type=None,model=None,submodel=None,url=None):
         if doc_type==None:doc_type='input_parameters'
         self.doc_type=doc_type
@@ -16,8 +24,73 @@ class Documentation_check():
         if submodel==None:submodel='Precipitation'
         self.submodel=submodel
         self.url=url#not very flexible with urls
-
-    #def doc_compare(    
+    def doc_compare_to_table(self)
+        import pandas as pd
+        try:
+            self.compare_submodel_input_param_doc_dict
+        except:
+            print('self.compare_submodel_input_param_doc_dict does not exist, running with defaults')
+            self.do_doc_compare()
+        
+    
+    def do_doc_compare(self, model=None,submodel=None):
+        '''
+        attributes created:
+        self.compare_orphaned_doc_params are parameters that show up in the
+            documentation that don't match any inputs
+        self.compare_orphaned_input_parameters are input parameters with no
+            corresponding documentation
+        self.compare_submodel_input_param_doc_dict for each input parameter,
+            has all features and values including for any matching (identical) parameter from the documentation( _overrview.py file)
+        '''
+        if model==None:
+            model="Meteorology"
+        self.compare_model=model
+        if submodel==None:
+            submodel=='Precipitation'
+        self.compare_submodel=submodel
+        try:
+            self.pull_overview_dict
+        except:
+            print('no pull_overview_dict. running default param values')
+            self.pull_overview(model=model,submodel=submodel)
+        try:
+            self.submodel_dict
+        except:
+            print('no submodel_dict. running default param values')
+            self.pull_input_params(model=model)
+                
+        #for each input_parameter, merge info from the two sources
+        
+        submodel_input_param_doc_dict={}
+        orphaned_input_parameters=[]
+        for input_parameter,input_feature_dict in self.submodel_dict[submodel].items():#key,value pair
+            docs_with_inputs=[]#otherwise they would be orphans
+            input_param_has_doc=0
+            param_dict={}
+            
+            param_dict['from_input']=input_feature_dict
+                #param_dict['input_{}'.format(feature_name)]=feature_value
+            for doc_parameter,doc_feature_dict in self.pull_overview_dict.items():
+                if input_parameter==doc_parameter:
+                    param_dict['from_doc']=doc_feature_dict
+                    docs_with_inputs.append(doc_parameter)
+                    submodel_input_param_doc_dict[doc_parameter]=param_dict
+                    input_param_has_doc=1
+                    break#stop loop since outer loop has found its documentation,\\
+                    #move to next input_parameter
+            if input_param_has_doc==0:
+                 orphaned_input_parameters.append(input_parameter)#the dictionary will also be missing \\
+                 #key:value for the doc side but not the input side
+        self.compare_orphaned_doc_params=[doc_parameter for doc_parameter,doc_feature_dict in self.pull_overview_dict.items() if not doc_parameter in docs_with_inputs ]
+        self.compare_orphaned_input_parameters=orphaned_input_parameters
+        self.compare_submodel_input_param_doc_dict=submodel_input_param_doc_dict
+        
+                    
+                    
+                    
+                
+        
 
     def pull_overview(self,model=None,submodel=None,baseurl=None,doc_type='input_parameters'):
         """creates self.pull_overview_dict 
@@ -108,10 +181,10 @@ class Documentation_check():
             for ii in range(widget_lines_end_shift[i]):
                 #print('line to be deleted:',all_lines[pos+ii+1])
                 all_lines[pos+ii+1]=""
-            print(widget_lines_condensed[i])
+            #print(widget_lines_condensed[i])
             if re.search('\'title\'\:',widget_lines_condensed[i]):
-                all_lines[pos+1]='widget_title='+all_lines[pos][re.search('\'title\'\:',widget_lines_condensed[i]).start()+10:-4]
-                print('here',all_lines[pos+1])
+                all_lines[pos+1]='widget_title='+all_lines[pos][re.search('\'title\'\:',widget_lines_condensed[i]).start()+10:-3]
+                #print('here',all_lines[pos+1])
                     
                     
         #print([all_lines[widget_lines_start_pos[i]] for i in range(len(widget_lines_start_pos))])
@@ -237,12 +310,15 @@ if __name__=="__main__":
     the_model='Meteorology';the_submodel='Precipitation';the_doc_type='input_parameters'
     test.pull_overview(model=the_model,submodel=the_submodel,doc_type=the_doc_type)
     test.pull_input_params(model=the_model)
-    print('============model has finished=================')
+    test.do_doc_compare(model=the_model,submodel=the_submodel)
+    print(test.compare_submodel_input_param_doc_dict)
+    
+''' print('============model has finished=================')
     print('=============================')
     print('submodel_dict:',test.submodel_dict)
     print('##########################')
     print('pull_overview_dict:',test.pull_overview_dict)
-
+'''
 
 
 
