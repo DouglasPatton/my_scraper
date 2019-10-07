@@ -24,7 +24,9 @@ class Documentation_Check():
         self.submodel=submodel
         if branch==None:branch='dev'
         self.url="https://raw.githubusercontent.com/quanted/hms_app/{}/models/".format(branch)
-        
+        if not os.path.exists('data'):
+            os.mkdir('data')
+            
     def doc_compare_to_table(self,submodel_comparison_dict=None):
         import pandas as pd;pd.set_option('display.max_colwidth', -1)
         if submodel_comparison_dict==None:
@@ -256,6 +258,7 @@ class Documentation_Check():
             baseurl=self.url+"/{}/{}_parameters.py".format(model.lower(),model.lower())
         dir_path=os.path.dirname(os.path.realpath(__file__))
         base_filename=dir_path
+
         filename, headers = urllib.request.urlretrieve(baseurl, filename=dir_path+"\\data\\{}_input_param_{}.py".format(model.lower(),timestr))
 
         with open(filename,'rU') as input_params:
@@ -381,18 +384,5 @@ if __name__=="__main__":
     test.pull_input_params(model=the_model)
     test.do_doc_compare(model=the_model,submodel=the_submodel)
     test.doc_compare_to_table()
-    print(test.compare_submodel_input_param_doc_dict)
-    print('------------------------')
-    print(test.compare_doc_simple_dict)
-    #print(test.compare_doc_simple_table)#no pandas on my computer to check
     
-''' print('============model has finished=================')
-    print('=============================')
-    print('submodel_dict:',test.submodel_dict)
-    print('##########################')
-    print('pull_overview_dict:',test.pull_overview_dict)
-'''
-
-
-
 
