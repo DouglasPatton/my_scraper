@@ -5,7 +5,7 @@
 ### data files ###
 data/*
 #remove old data from repo
-git rm -r data/
+#git rm -r data/
 
 ### JupyterNotebook ###
 .ipynb_checkpoints
