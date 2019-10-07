@@ -2,8 +2,8 @@
 # Created by https://www.gitignore.io/api/linux,python,jupyternotebook,jupyternotebooks
 # Edit at https://www.gitignore.io/?templates=linux,python,jupyternotebook,jupyternotebooks
 
-### data file ###
-data/
+### data files ###
+data/*
 #remove old data from repo
 git rm -r data/
 
