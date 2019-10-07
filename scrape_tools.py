@@ -26,7 +26,7 @@ class Documentation_Check():
         self.url="https://raw.githubusercontent.com/quanted/hms_app/{}/models/".format(branch)
         
     def doc_compare_to_table(self,submodel_comparison_dict=None):
-        #import pandas as pd
+        import pandas as pd;pd.set_option('display.max_colwidth', -1)
         if submodel_comparison_dict==None:
             try:
                 self.compare_submodel_input_param_doc_dict
@@ -34,9 +34,15 @@ class Documentation_Check():
                 print('self.compare_submodel_input_param_doc_dict does not exist, running with defaults')
                 self.do_doc_compare()
             submodel_comparison_dict=self.compare_submodel_input_param_doc_dict
-        #extract title:value from inputs that have that widget
+        #extract title(key):value from inputs that have that widget
         #then extract type and description from docs
         simplified_submodel_dict={}
+
+        multi_line_blank="__________________________________ "\
+            "__________________________________ "\
+            "__________________________________ "\
+            "__________________________________ "
+            
         
         for param,param_dict in submodel_comparison_dict.items():
             simplified_param_dict={}
@@ -47,19 +53,28 @@ class Documentation_Check():
             try:
                 simplified_param_dict['type']=param_dict['from_doc']['type']
             except:
-                simplified_param_dict['type']="_________________________________"
+                simplified_param_dict['type']="________________"
             try:
                 simplified_param_dict['description']=param_dict['from_doc']['description']
             except:
-                simplified_param_dict['description']="_________________________________"
+                simplified_param_dict['description']=multi_line_blank
             simplified_submodel_dict[param]=simplified_param_dict
-        self.compare_doc_simple_dict=simplified_submodel_dict    
-        #self.compare_doc_simple_table=pd.DataFrame(simplified_dict).T
+        self.compare_doc_simple_dict=simplified_submodel_dict
+        #print(simplified_submodel_dict)
+        self.compare_doc_simple_table=pd.DataFrame(simplified_submodel_dict).T
+        
+        self.compare_doc_simple_table.to_html('output/doc_check1.html')
+
+        self.orphan_table=pd.DataFrame(self.orphan_dict, index=['status']).T
+        
+        with open("output/doc_check1.html",'w') as _file:
+            _file.write(self.compare_doc_simple_table.to_html() + "<br><br>" + self.orphan_table.to_html())
+         
     
     def do_doc_compare(self, model=None,submodel=None):
         '''
         attributes created:
-        self.compare_orphaned_doc_params are parameters that show up in the
+        self.orphaned_documentation are parameters that show up in the
             documentation that don't match any inputs
         self.compare_orphaned_input_parameters are input parameters with no
             corresponding documentation
@@ -87,32 +102,45 @@ class Documentation_Check():
         
         submodel_input_param_doc_dict={}
         orphaned_input_parameters=[]
+        docs_with_inputs=[]#otherwise they would be orphans
         for input_parameter,input_feature_dict in self.submodel_dict[submodel].items():#key,value pair
-            docs_with_inputs=[]#otherwise they would be orphans
+            
             input_param_has_doc=0
             param_dict={}
             
             param_dict['from_input']=input_feature_dict
                 #param_dict['input_{}'.format(feature_name)]=feature_value
             for doc_parameter,doc_feature_dict in self.pull_overview_dict.items():
-                if input_parameter==doc_parameter:
+                if input_parameter.lower()==doc_parameter.lower():
                     param_dict['from_doc']=doc_feature_dict
-                    docs_with_inputs.append(doc_parameter)
+                    docs_with_inputs.append(doc_parameter)#doc_parameter matches \\
+                    #input_parameter, so they interchangeable here
                     submodel_input_param_doc_dict[doc_parameter]=param_dict
                     input_param_has_doc=1
                     break#stop loop since outer loop has found its documentation,\\
                     #move to next input_parameter
             if input_param_has_doc==0:
-                 orphaned_input_parameters.append(input_parameter)#the dictionary will also be missing \\
-                 #key:value for the doc side but not the input side
-        self.compare_orphaned_doc_params=[
+                print(input_parameter,'doesn\'t have doc')
+                param_dict['from_doc']='documentation not found'
+                submodel_input_param_doc_dict[input_parameter]=param_dict
+                orphaned_input_parameters.append(input_parameter)#the dictionary will also be missing \\
+                #key:value for the doc side but not the input side
+        print('docs_with_inputs:',docs_with_inputs)
+        orphaned_documentation=[
             doc_parameter 
             for doc_parameter,doc_feature_dict 
             in self.pull_overview_dict.items() 
-            if not doc_parameter in docs_with_inputs
+            if not doc_parameter.lower() in [item.lower() for item in docs_with_inputs]
             ]
-        self.compare_orphaned_input_parameters=orphaned_input_parameters
+        #self.compare_orphaned_input_parameters=orphaned_input_parameters
         self.compare_submodel_input_param_doc_dict=submodel_input_param_doc_dict
+        orphan_dict={}
+        for key in orphaned_input_parameters:
+            orphan_dict[key]='no documentation found'
+        for key in orphaned_documentation:
+            orphan_dict[key]='no input_parameter found'
+        self.orphan_dict=orphan_dict
+        
         
                     
                     
