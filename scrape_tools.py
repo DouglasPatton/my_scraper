@@ -65,7 +65,7 @@ class Documentation_Check():
         #print(simplified_submodel_dict)
         self.compare_doc_simple_table=pd.DataFrame(simplified_submodel_dict).T
         
-        self.compare_doc_simple_table.to_html('output/doc_check1.html')
+        self.compare_doc_simple_table.to_html('output/doc_check-{}-{}-{}.html'.format(self.model,self.submodel,timestr))
 
         self.orphan_table=pd.DataFrame(self.orphan_dict, index=['status']).T
         
@@ -122,12 +122,12 @@ class Documentation_Check():
                     break#stop loop since outer loop has found its documentation,\\
                     #move to next input_parameter
             if input_param_has_doc==0:
-                print(input_parameter,'doesn\'t have doc')
+                #print(input_parameter,'doesn\'t have doc')
                 param_dict['from_doc']='documentation not found'
                 submodel_input_param_doc_dict[input_parameter]=param_dict
                 orphaned_input_parameters.append(input_parameter)#the dictionary will also be missing \\
                 #key:value for the doc side but not the input side
-        print('docs_with_inputs:',docs_with_inputs)
+        #print('docs_with_inputs:',docs_with_inputs)
         orphaned_documentation=[
             doc_parameter 
             for doc_parameter,doc_feature_dict 
@@ -160,6 +160,7 @@ class Documentation_Check():
             baseurl=self.url+"{}/{}_overview.py".format(model.lower(),submodel.lower())
         dir_path=os.path.dirname(os.path.realpath(__file__))
         base_filename=dir_path
+        #print('baseurl for overview:',baseurl)
         try:
             filename, headers = urllib.request.urlretrieve(
                 baseurl,
@@ -255,12 +256,13 @@ class Documentation_Check():
         """
         if model==None:model='Meteorology' #default to meterology model
         if baseurl==None: #default to dev branch, but user can provide own url, such as for master branch
-            baseurl=self.url+"/{}/{}_parameters.py".format(model.lower(),model.lower())
+            baseurl=self.url+"{}/{}_parameters.py".format(model.lower(),self.submodel.lower())
         dir_path=os.path.dirname(os.path.realpath(__file__))
         base_filename=dir_path
-
-        filename, headers = urllib.request.urlretrieve(baseurl, filename=dir_path+"\\data\\{}_input_param_{}.py".format(model.lower(),timestr))
-
+        
+        try:
+            filename, headers = urllib.request.urlretrieve(baseurl, filename=dir_path+"\\data\\{}_input_param_{}.py".format(model.lower(),timestr))
+        except: print('urllib error',baseurl)
         with open(filename,'rU') as input_params:
             #use .strip() method to remove line-endings and whitespace
             all_lines=[line.strip() for line in input_params]
